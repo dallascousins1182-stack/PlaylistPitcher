@@ -124,15 +124,42 @@ class SpotifyClient:
                     continue
 
                 details_url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
-                details_params = {
-                    "fields": "id,name,description,public,owner(display_name,id,external_urls),followers(total),tracks(total),external_urls"
-                }
-
-                details_resp = requests.get(details_url, headers=headers, params=details_params)
+                # Request full playlist details for reliable stats.
+                details_resp = requests.get(details_url, headers=headers)
                 if details_resp.status_code == 200:
                     details = details_resp.json() or {}
+
+                    # Ensure tracks.total is present and numeric; fallback to tracks endpoint if needed.
+                    track_total = None
+                    details_tracks = details.get('tracks') or {}
+                    if isinstance(details_tracks, dict):
+                        maybe_total = details_tracks.get('total')
+                        if isinstance(maybe_total, int):
+                            track_total = maybe_total
+
+                    if track_total is None:
+                        tracks_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+                        tracks_resp = requests.get(
+                            tracks_url,
+                            headers=headers,
+                            params={"fields": "total", "limit": "1", "offset": "0"}
+                        )
+                        if tracks_resp.status_code == 200:
+                            tracks_data = tracks_resp.json() or {}
+                            maybe_total = tracks_data.get('total')
+                            if isinstance(maybe_total, int):
+                                track_total = maybe_total
+
                     merged = dict(playlist)
                     merged.update(details)
+
+                    merged_tracks = merged.get('tracks')
+                    if not isinstance(merged_tracks, dict):
+                        merged_tracks = {}
+                    if track_total is not None:
+                        merged_tracks['total'] = track_total
+                    merged['tracks'] = merged_tracks
+
                     hydrated.append(merged)
                 else:
                     print(f"[DEBUG] Details fetch failed for playlist {playlist_id}: {details_resp.status_code}", file=sys.stderr)
