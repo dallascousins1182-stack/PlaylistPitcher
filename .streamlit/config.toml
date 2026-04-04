@@ -1,10 +1,13 @@
 [server]
 port = 8501
 headless = true
-runOnSave = true
+runOnSave = false
+enableCORS = false
+enableXsrfProtection = false
 
 [client]
-showErrorDetails = true
+showErrorDetails = false
 
 [logger]
-level = "info"
+level = "error"
+
