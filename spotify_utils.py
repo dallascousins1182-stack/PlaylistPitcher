@@ -74,8 +74,12 @@ class SpotifyClient:
             }
             
             print(f"[DEBUG] API call: {url} with params {params}", file=sys.stderr)
+            print(f"[DEBUG] Headers: Authorization present: {bool(headers['Authorization'])}", file=sys.stderr)
             
             response = requests.get(url, headers=headers, params=params)
+            print(f"[DEBUG] Response status: {response.status_code}", file=sys.stderr)
+            print(f"[DEBUG] Response text: {response.text[:500]}", file=sys.stderr)
+            
             response.raise_for_status()
             
             data = response.json()
