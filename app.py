@@ -101,12 +101,18 @@ if client_id and client_secret:
                     playlists = spotify.search_playlists(music_type.strip(), limit=search_limit)
                     
                     if playlists:
-                        st.success(f"Found {len(playlists)} playlists!")
-                        st.markdown("---")
-                        
-                        # Display results
-                        for idx, playlist in enumerate(playlists, 1):
-                            with st.container():
+                        playlists = [p for p in playlists if isinstance(p, dict)]
+                        if not playlists:
+                            st.warning(f"No valid playlists were returned for '{music_type}'.")
+                        else:
+                            st.success(f"Found {len(playlists)} playlists!")
+                            st.markdown("---")
+                            
+                            # Display results
+                            for idx, playlist in enumerate(playlists, 1):
+                                if not playlist:
+                                    continue
+                                with st.container():
                                 col1, col2 = st.columns([4, 1])
                                 
                                 with col1:

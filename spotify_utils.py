@@ -108,7 +108,8 @@ class SpotifyClient:
                 print("[DEBUG] playlists_data is None", file=sys.stderr)
                 playlists_data = {}
             playlists = playlists_data.get('items') or []
-            print(f"[DEBUG] Found {len(playlists)} playlists", file=sys.stderr)
+            playlists = [p for p in playlists if isinstance(p, dict)]
+            print(f"[DEBUG] Found {len(playlists)} valid playlists out of {len(playlists_data.get('items') or [])}", file=sys.stderr)
             return playlists
             
         except requests.exceptions.RequestException as e:
