@@ -92,9 +92,13 @@ if client_id and client_secret:
             )
         
         if music_type and music_type.strip():
+            search_limit = max(1, min(50, int(num_results)))
+            with st.expander("Debug: search parameters", expanded=False):
+                st.write(f"Query: {music_type.strip()}")
+                st.write(f"Limit: {search_limit} ({type(search_limit).__name__})")
             with st.spinner(f"🔍 Searching for '{music_type}' playlists..."):
                 try:
-                    playlists = spotify.search_playlists(music_type.strip(), limit=int(num_results))
+                    playlists = spotify.search_playlists(music_type.strip(), limit=search_limit)
                     
                     if playlists:
                         st.success(f"Found {len(playlists)} playlists!")
@@ -168,10 +172,12 @@ if client_id and client_secret:
                         st.warning(f"No playlists found for '{music_type}'. Try a different search term!")
                 
                 except spotipy.exceptions.SpotifyException as e:
-                    st.error(f"❌ Spotify API Error: {e.http_status} - {e.msg}")
+                    st.error(f"❌ Spotify API Error: {e.http_status} - {getattr(e, 'msg', str(e))}")
+                    st.error(f"Raw error: {repr(e)}")
                     st.info("💡 **Tips:** Check your credentials, try a different search term, or wait a moment and try again.")
                 except Exception as e:
                     st.error(f"❌ Error searching playlists: {str(e)}")
+                    st.error(f"Raw error: {repr(e)}")
                     st.info("💡 **Troubleshooting:** Make sure your Spotify API credentials are valid and try again.")
     
     except ValueError as e:
