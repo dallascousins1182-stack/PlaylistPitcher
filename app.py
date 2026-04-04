@@ -113,11 +113,11 @@ if client_id and client_secret:
                                 if not playlist:
                                     continue
                                 with st.container():
-                                col1, col2 = st.columns([4, 1])
-                                
-                                with col1:
-                                    # Playlist header
-                                    st.markdown(f"### {idx}. {playlist.get('name', 'Untitled')}")
+                                    col1, col2 = st.columns([4, 1])
+                                    
+                                    with col1:
+                                        # Playlist header
+                                        st.markdown(f"### {idx}. {playlist.get('name', 'Untitled')}")
                                     
                                     # Owner info
                                     owner = playlist.get('owner', {})
