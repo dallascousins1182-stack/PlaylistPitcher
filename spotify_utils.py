@@ -59,20 +59,33 @@ class SpotifyClient:
             
             print(f"[DEBUG] Searching: query='{query}', limit={limit} (type: {type(limit).__name__})", file=sys.stderr)
             
-            # Use spotipy's search method directly
-            results = self.sp.search(
-                q=query,
-                type='playlist',
-                limit=limit
-            )
+            # Use direct API call instead of spotipy search
+            import requests
             
-            playlists = results.get('playlists', {}).get('items', [])
+            url = "https://api.spotify.com/v1/search"
+            headers = {
+                "Authorization": f"Bearer {self.sp.auth_manager.get_access_token(as_dict=False)}"
+            }
+            params = {
+                "q": query,
+                "type": "playlist",
+                "limit": limit,
+                "offset": 0
+            }
+            
+            print(f"[DEBUG] API call: {url} with params {params}", file=sys.stderr)
+            
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            playlists = data.get('playlists', {}).get('items', [])
             print(f"[DEBUG] Found {len(playlists)} playlists", file=sys.stderr)
             return playlists
             
-        except spotipy.exceptions.SpotifyException as e:
-            print(f"[DEBUG] SpotifyException: {e.http_status} - {e.msg}", file=sys.stderr)
-            raise ValueError(f"Spotify API Error: {e.msg}")
+        except requests.exceptions.RequestException as e:
+            print(f"[DEBUG] RequestException: {e}", file=sys.stderr)
+            raise ValueError(f"Spotify API Error: {str(e)}")
         except Exception as e:
             print(f"[DEBUG] Exception: {type(e).__name__}: {str(e)}", file=sys.stderr)
             raise ValueError(f"Failed to search playlists: {str(e)}")
