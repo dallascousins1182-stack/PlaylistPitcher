@@ -54,8 +54,8 @@ class SpotifyClient:
             limit = int(limit)
             if limit < 1:
                 limit = 1
-            elif limit > 10:
-                limit = 10
+            elif limit > 50:
+                limit = 50
             
             print(f"[DEBUG] Searching: query='{query}', limit={limit} (type: {type(limit).__name__})", file=sys.stderr)
             
@@ -75,42 +75,71 @@ class SpotifyClient:
                 print(f"[DEBUG] Token error: {e}", file=sys.stderr)
                 raise ValueError(f"Failed to get access token: {e}")
 
-            url = "https://api.spotify.com/v1/search"
             headers = {
                 "Authorization": f"Bearer {access_token}"
             }
-            params = {
-                "q": query,
-                "type": "playlist",
-                "limit": str(limit),
-                "offset": "0"
-            }
-            
-            print(f"[DEBUG] Final URL: {requests.Request('GET', url, headers=headers, params=params).prepare().url}", file=sys.stderr)
-            print(f"[DEBUG] Auth header: Bearer {access_token[:20]}...", file=sys.stderr)
-            
-            response = requests.get(url, headers=headers, params=params)
-            print(f"[DEBUG] Response status: {response.status_code}", file=sys.stderr)
-            print(f"[DEBUG] Response headers: {dict(response.headers)}", file=sys.stderr)
-            
-            if response.status_code != 200:
-                print(f"[DEBUG] Error response body: {response.text}", file=sys.stderr)
-                try:
-                    error_data = response.json()
-                    print(f"[DEBUG] Error JSON: {error_data}", file=sys.stderr)
-                except:
-                    print(f"[DEBUG] Error text: {response.text}", file=sys.stderr)
-                response.raise_for_status()
-            
-            data = response.json()
-            playlists_data = data.get('playlists') or {}
-            if playlists_data is None:
-                print("[DEBUG] playlists_data is None", file=sys.stderr)
-                playlists_data = {}
-            playlists = playlists_data.get('items') or []
-            playlists = [p for p in playlists if isinstance(p, dict)]
-            print(f"[DEBUG] Found {len(playlists)} valid playlists out of {len(playlists_data.get('items') or [])}", file=sys.stderr)
-            return playlists
+
+            # Spotify search returns simplified playlist objects. Paginate search and
+            # then hydrate each playlist with full details to get accurate followers.
+            all_playlists = []
+            max_per_request = 10
+            for offset in range(0, limit, max_per_request):
+                current_limit = min(max_per_request, limit - offset)
+                search_url = "https://api.spotify.com/v1/search"
+                params = {
+                    "q": query,
+                    "type": "playlist",
+                    "limit": str(current_limit),
+                    "offset": str(offset)
+                }
+
+                response = requests.get(search_url, headers=headers, params=params)
+                print(f"[DEBUG] Search response status: {response.status_code} (offset={offset}, limit={current_limit})", file=sys.stderr)
+
+                if response.status_code != 200:
+                    print(f"[DEBUG] Error response body: {response.text}", file=sys.stderr)
+                    try:
+                        error_data = response.json()
+                        print(f"[DEBUG] Error JSON: {error_data}", file=sys.stderr)
+                    except Exception:
+                        print(f"[DEBUG] Error text: {response.text}", file=sys.stderr)
+                    response.raise_for_status()
+
+                data = response.json()
+                playlists_data = data.get('playlists') or {}
+                items = playlists_data.get('items') or []
+                items = [p for p in items if isinstance(p, dict)]
+                all_playlists.extend(items)
+
+                # No additional pages available.
+                if len(items) < current_limit:
+                    break
+
+            # Hydrate each playlist with full details so follower counts are accurate.
+            hydrated = []
+            for playlist in all_playlists:
+                playlist_id = playlist.get('id')
+                if not playlist_id:
+                    hydrated.append(playlist)
+                    continue
+
+                details_url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
+                details_params = {
+                    "fields": "id,name,description,public,owner(display_name,id,external_urls),followers(total),tracks(total),external_urls"
+                }
+
+                details_resp = requests.get(details_url, headers=headers, params=details_params)
+                if details_resp.status_code == 200:
+                    details = details_resp.json() or {}
+                    merged = dict(playlist)
+                    merged.update(details)
+                    hydrated.append(merged)
+                else:
+                    print(f"[DEBUG] Details fetch failed for playlist {playlist_id}: {details_resp.status_code}", file=sys.stderr)
+                    hydrated.append(playlist)
+
+            print(f"[DEBUG] Returning {len(hydrated)} playlists with hydrated metadata", file=sys.stderr)
+            return hydrated[:limit]
             
         except requests.exceptions.RequestException as e:
             print(f"[DEBUG] RequestException: {e}", file=sys.stderr)
