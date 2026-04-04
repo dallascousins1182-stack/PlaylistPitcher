@@ -1,5 +1,4 @@
 [server]
-port = 8501
 headless = true
 runOnSave = false
 enableCORS = false
@@ -7,6 +6,9 @@ enableXsrfProtection = false
 
 [client]
 showErrorDetails = false
+
+[browser]
+gatherUsageStats = false
 
 [logger]
 level = "error"

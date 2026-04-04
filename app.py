@@ -1,6 +1,8 @@
 """
 PlaylistPitcher - Find and contact Spotify playlist owners for music promotion.
 """
+print("🚀 APP.PY STARTING - This should appear in Railway logs!", flush=True)
+
 import os
 import streamlit as st
 import spotipy
