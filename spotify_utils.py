@@ -64,10 +64,16 @@ class SpotifyClient:
             
             # Get fresh access token
             try:
-                # Try to refresh token if needed
-                token_info = self.sp.auth_manager.get_access_token(as_dict=True)
+                # Force token refresh if needed
+                token_info = self.sp.auth_manager.get_cached_token()
+                if not token_info or self.sp.auth_manager.is_token_expired(token_info):
+                    print("[DEBUG] Token expired or missing, refreshing...", file=sys.stderr)
+                    token_info = self.sp.auth_manager.get_access_token(as_dict=True)
+                
                 access_token = token_info.get('access_token') if token_info else None
                 print(f"[DEBUG] Token info: {bool(token_info)}, access_token: {bool(access_token)}", file=sys.stderr)
+                print(f"[DEBUG] Token expires: {token_info.get('expires_at') if token_info else 'N/A'}", file=sys.stderr)
+                
                 if not access_token:
                     raise ValueError("No access token available")
             except Exception as e:
@@ -87,7 +93,7 @@ class SpotifyClient:
             }
             
             print(f"[DEBUG] Final URL: {requests.Request('GET', url, headers=headers, params=params).prepare().url}", file=sys.stderr)
-            print(f"[DEBUG] Headers: {headers}", file=sys.stderr)
+            print(f"[DEBUG] Auth header: Bearer {access_token[:20]}...", file=sys.stderr)
             
             response = requests.get(url, headers=headers, params=params)
             print(f"[DEBUG] Response status: {response.status_code}", file=sys.stderr)
