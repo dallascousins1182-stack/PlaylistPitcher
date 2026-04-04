@@ -62,25 +62,45 @@ class SpotifyClient:
             # Use direct API call instead of spotipy search
             import requests
             
+            # Get fresh access token
+            try:
+                # Try to refresh token if needed
+                token_info = self.sp.auth_manager.get_access_token(as_dict=True)
+                access_token = token_info.get('access_token') if token_info else None
+                print(f"[DEBUG] Token info: {bool(token_info)}, access_token: {bool(access_token)}", file=sys.stderr)
+                if not access_token:
+                    raise ValueError("No access token available")
+            except Exception as e:
+                print(f"[DEBUG] Token error: {e}", file=sys.stderr)
+                raise ValueError(f"Failed to get access token: {e}")
+            
             url = "https://api.spotify.com/v1/search"
             headers = {
-                "Authorization": f"Bearer {self.sp.auth_manager.get_access_token(as_dict=False)}"
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
             }
             params = {
                 "q": query,
-                "type": "playlist",
-                "limit": limit,
-                "offset": 0
+                "type": "playlist", 
+                "limit": str(limit),
+                "offset": "0"
             }
             
-            print(f"[DEBUG] API call: {url} with params {params}", file=sys.stderr)
-            print(f"[DEBUG] Headers: Authorization present: {bool(headers['Authorization'])}", file=sys.stderr)
+            print(f"[DEBUG] Final URL: {requests.Request('GET', url, headers=headers, params=params).prepare().url}", file=sys.stderr)
+            print(f"[DEBUG] Headers: {headers}", file=sys.stderr)
             
             response = requests.get(url, headers=headers, params=params)
             print(f"[DEBUG] Response status: {response.status_code}", file=sys.stderr)
-            print(f"[DEBUG] Response text: {response.text[:500]}", file=sys.stderr)
+            print(f"[DEBUG] Response headers: {dict(response.headers)}", file=sys.stderr)
             
-            response.raise_for_status()
+            if response.status_code != 200:
+                print(f"[DEBUG] Error response body: {response.text}", file=sys.stderr)
+                try:
+                    error_data = response.json()
+                    print(f"[DEBUG] Error JSON: {error_data}", file=sys.stderr)
+                except:
+                    print(f"[DEBUG] Error text: {response.text}", file=sys.stderr)
+                response.raise_for_status()
             
             data = response.json()
             playlists = data.get('playlists', {}).get('items', [])
