@@ -103,7 +103,11 @@ class SpotifyClient:
                 response.raise_for_status()
             
             data = response.json()
-            playlists = data.get('playlists', {}).get('items', [])
+            playlists_data = data.get('playlists') or {}
+            if playlists_data is None:
+                print("[DEBUG] playlists_data is None", file=sys.stderr)
+                playlists_data = {}
+            playlists = playlists_data.get('items') or []
             print(f"[DEBUG] Found {len(playlists)} playlists", file=sys.stderr)
             return playlists
             
