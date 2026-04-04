@@ -1,1 +1,1 @@
-web: cd /app && streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+web: sh -c "cd /app && streamlit run app.py --server.port \$PORT --server.address 0.0.0.0 --server.headless true"
