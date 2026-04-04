@@ -11,6 +11,13 @@ from contact_extractor import extract_contact_info, format_contact_info
 # Load environment variables
 load_dotenv()
 
+# Debug logging for Railway
+print("Starting PlaylistPitcher...", flush=True)
+print(f"Python version: {os.sys.version}", flush=True)
+print(f"Current working directory: {os.getcwd()}", flush=True)
+print(f"Environment variables loaded: SPOTIFY_CLIENT_ID={'✅' if os.getenv('SPOTIFY_CLIENT_ID') else '❌'}", flush=True)
+print(f"Environment variables loaded: SPOTIFY_CLIENT_SECRET={'✅' if os.getenv('SPOTIFY_CLIENT_SECRET') else '❌'}", flush=True)
+
 # Page configuration
 st.set_page_config(
     page_title="PlaylistPitcher",
@@ -43,6 +50,10 @@ with st.sidebar:
     # Get credentials from env or user input
     client_id = os.getenv('SPOTIFY_CLIENT_ID')
     client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+    
+    # Debug: Show if credentials are loaded
+    st.write(f"Client ID loaded: {'✅' if client_id else '❌'}")
+    st.write(f"Client Secret loaded: {'✅' if client_secret else '❌'}")
     
     if not client_id or not client_secret:
         st.warning("⚠️ Spotify credentials not found in environment variables")
