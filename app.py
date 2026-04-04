@@ -82,7 +82,7 @@ if client_id and client_secret:
             )
         
         with col2:
-            num_results = st.number_input(
+            num_results = st.slider(
                 "Results",
                 min_value=5,
                 max_value=50,
@@ -91,10 +91,10 @@ if client_id and client_secret:
                 help="Number of playlists to search for"
             )
         
-        if music_type:
+        if music_type and music_type.strip():
             with st.spinner(f"🔍 Searching for '{music_type}' playlists..."):
                 try:
-                    playlists = spotify.search_playlists(music_type, limit=int(num_results))
+                    playlists = spotify.search_playlists(music_type.strip(), limit=int(num_results))
                     
                     if playlists:
                         st.success(f"Found {len(playlists)} playlists!")
