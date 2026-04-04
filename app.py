@@ -85,10 +85,10 @@ if client_id and client_secret:
             num_results = st.slider(
                 "Results",
                 min_value=5,
-                max_value=50,
-                value=15,
-                step=5,
-                help="Number of playlists to search for"
+                max_value=10,
+                value=10,
+                step=1,
+                help="Number of playlists to search for (max 10)"
             )
         
         if music_type and music_type.strip():

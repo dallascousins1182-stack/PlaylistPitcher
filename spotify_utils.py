@@ -54,8 +54,8 @@ class SpotifyClient:
             limit = int(limit)
             if limit < 1:
                 limit = 1
-            elif limit > 50:
-                limit = 50
+            elif limit > 10:
+                limit = 10
             
             print(f"[DEBUG] Searching: query='{query}', limit={limit} (type: {type(limit).__name__})", file=sys.stderr)
             
@@ -64,30 +64,24 @@ class SpotifyClient:
             
             # Get fresh access token
             try:
-                # Force token refresh if needed
-                token_info = self.sp.auth_manager.get_cached_token()
-                if not token_info or self.sp.auth_manager.is_token_expired(token_info):
-                    print("[DEBUG] Token expired or missing, refreshing...", file=sys.stderr)
-                    token_info = self.sp.auth_manager.get_access_token(as_dict=True)
-                
+                token_info = self.sp.auth_manager.get_access_token(as_dict=True, check_cache=True)
                 access_token = token_info.get('access_token') if token_info else None
                 print(f"[DEBUG] Token info: {bool(token_info)}, access_token: {bool(access_token)}", file=sys.stderr)
                 print(f"[DEBUG] Token expires: {token_info.get('expires_at') if token_info else 'N/A'}", file=sys.stderr)
-                
+
                 if not access_token:
                     raise ValueError("No access token available")
             except Exception as e:
                 print(f"[DEBUG] Token error: {e}", file=sys.stderr)
                 raise ValueError(f"Failed to get access token: {e}")
-            
+
             url = "https://api.spotify.com/v1/search"
             headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json"
+                "Authorization": f"Bearer {access_token}"
             }
             params = {
                 "q": query,
-                "type": "playlist", 
+                "type": "playlist",
                 "limit": str(limit),
                 "offset": "0"
             }
